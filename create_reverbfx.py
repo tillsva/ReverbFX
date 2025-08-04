@@ -88,6 +88,8 @@ def validate_rir(rir, sr):
     Validates a Room Impulse Response (RIR).
     Raises an exception if the RIR is invalid.
     """
+
+    
     # 1. Check for NaN or Inf values
     if np.isnan(rir).any() or np.isinf(rir).any():
         raise InvalidRIRException("Invalid RIR: Contains NaN or Inf values.")
