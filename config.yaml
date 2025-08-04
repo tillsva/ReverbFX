@@ -1,0 +1,29 @@
+plugin_dirs:
+  SkyNet: "C:\\Program Files\\Common Files\\VST3\\SkyNet.vst3"
+  Valhalla: "C:\\Program Files\\Steinberg\\VstPlugins\\ValhallaSupermassive_x64.dll"
+  Protoverb: "C:\\Program Files\\Common Files\\VST3\\Protoverb(x64).vst3"
+  TAL-Reverb-4: "C:\\Program Files\\Common Files\\VST3\\TAL-Reverb-4.vst3\\Contents\\x86_64-win\\TAL-Reverb-4.vst3"
+
+force_params:
+  SkyNet:
+    0: 0
+    3: 1
+
+  Protoverb:
+    0: 1
+    1: 1
+    3: 0
+    4: 1
+
+  Valhalla:
+    0: 1
+    12: 0
+
+  TAL-Reverb-4:
+    0: 1
+    1: 1
+    2: 0
+    3: 0 
+
+  
+
