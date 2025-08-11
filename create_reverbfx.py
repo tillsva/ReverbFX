@@ -1,5 +1,5 @@
 import os
-from os.path import join, abspath, dirname
+from os.path import join, abspath, dirname, splitext
 import random
 import csv
 import numpy as np
@@ -88,8 +88,6 @@ def validate_rir(rir, sr):
     Validates a Room Impulse Response (RIR).
     Raises an exception if the RIR is invalid.
     """
-
-    
     # 1. Check for NaN or Inf values
     if np.isnan(rir).any() or np.isinf(rir).any():
         raise InvalidRIRException("Invalid RIR: Contains NaN or Inf values.")
@@ -134,13 +132,20 @@ def validate_rir(rir, sr):
     
     return rt60
 
-def process_rir(rir):
-    """Processes RIR"""
+def normalize(rir):
     if np.max(np.abs(rir)) < 0.1:
         rir = 0.1 * rir / np.max(np.abs(rir))
     elif np.max(np.abs(rir)) > 0.7:
         rir = 0.7 * rir / np.max(np.abs(rir))
     return rir
+
+def render_rir(engine, graph, rir_len, sr, output_path, rir_name):
+    engine.load_graph(graph) 
+    engine.render(rir_len)
+    rir = normalize(engine.get_audio().T)
+    rt60 = validate_rir(rir, sr)
+    write(join(output_path, rir_name), rir, sr, subtype="FLOAT")
+    return rt60
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -151,6 +156,7 @@ if __name__ == '__main__':
     parser.add_argument("--rir_len", type=int, default=10, help='Duration of the resulting RIR in seconds')
     parser.add_argument("--name", type=str, default="ReverbFx", help='Name of the dataset')
     parser.add_argument("--var_num", type=int, default=15, help='Number of parameter variations per preset')
+    parser.add_argument("--save_state", type=bool, help='Saves the randomized presets as an state')
     args = parser.parse_args()
 
 preset_dir = args.preset_dir
@@ -169,8 +175,9 @@ try:
 except Exception as e:
     raise Exception(f"Error creating output folder: {e}")
 
-out_preset_base = join(output_base_path, "Presets")
-os.makedirs(out_preset_base)
+if(args.save_state):
+    out_preset_base = join(output_base_path, "States")
+    os.makedirs(out_preset_base)
 
 output_rir_path = join(output_base_path, "RIRs")
 os.makedirs(output_rir_path)
@@ -187,7 +194,6 @@ with open(error_log_file, mode="w", newline="") as file:
 
 
 num_presets = {}
-
 engine = daw.RenderEngine(sr, buffer_size)
 impulse = engine.make_playback_processor("impulse", create_impulse(rir_len, sr))
 
@@ -195,13 +201,21 @@ random.seed(42)
 
 for plugin_name, plugin_path in plugin_dirs.items():
     
-    out_preset_path = join(out_preset_base, plugin_name)
-    os.makedirs(out_preset_path, exist_ok=True)
+    if(args.save_state):
+        out_preset_path = join(out_preset_base, plugin_name)
+        os.makedirs(out_preset_path, exist_ok=True)
 
     output_path = join(output_rir_path, plugin_name)
     os.makedirs(output_path, exist_ok=True)
     
     plugin = engine.make_plugin_processor(plugin_name, plugin_path)
+
+    graph = [
+        (impulse, []),
+
+        (plugin, [impulse.get_name()])
+    ]
+
     presets = load_presets(join(preset_dir, plugin_name))
 
     forced_plugin_params = force_params[plugin_name]
@@ -237,12 +251,6 @@ for plugin_name, plugin_path in plugin_dirs.items():
         if plugin_name == "Protoverb":
             x=5
 
-        graph = [
-                (impulse, []),
-
-                (plugin, [impulse.get_name()])
-            ]
-
         for i in range(x):
             parameter_changes = ""
             default_values = []
@@ -265,18 +273,13 @@ for plugin_name, plugin_path in plugin_dirs.items():
                     except Exception as e:
                         print(f"Error setting parameter '{param['name']}' (ID: {param['id']}): {e}, plugin: {plugin_name}")
                                      
-            
-            engine.load_graph(graph) 
-            engine.render(rir_len)
-            rir = engine.get_audio().T
-            rir = process_rir(rir)
 
             rir_name = f"{plugin_name}_{preset_name}_{i:02}.wav"
             
             try:
-                rt60 = validate_rir(rir, sr)
-                write(join(output_path, rir_name), rir, sr, subtype="FLOAT")
-                plugin.save_state(join(out_preset_path, rir_name))
+                rt60 = render_rir(engine, graph, rir_len, sr, output_path, rir_name)
+                if args.save_state:
+                    plugin.save_state(join(out_preset_path, rir_name))
                 with open(log_file, mode="a", newline="") as file:
                     writer = csv.writer(file)
                     writer.writerow([rir_name, plugin_name, preset_name, parameter_changes, rt60])
@@ -293,6 +296,8 @@ for plugin_name, plugin_path in plugin_dirs.items():
                     plugin.set_parameter(idx, value)
 
     engine.remove_processor(plugin_name)
+
+
 
 print(f"{args.name} successfully built.")
 for plugin, count in num_presets.items():
