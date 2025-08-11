@@ -1,0 +1,8 @@
+numpy
+dawdreamer
+soundfile
+pandas
+scipy
+scikit-learn
+pyyaml
+tqdm
