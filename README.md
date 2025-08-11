@@ -10,9 +10,9 @@ Every paramerization of the RIR is saved as state. The state contains all the in
 
 A stringent validation protocol was applied to ensure data quality, checking for numerical integrity, DC offset, signal energy, plausible RT60 range, envelope decay, and early energy concentration.
 
-More details and the download can be found [here].(https://zenodo.org/records/16186381)
+More details and the download can be found [here](https://zenodo.org/records/16186381).
 
-##How to use the script##
+## How to use the script
 1. Download and install the Plugins. The script should also work for other plugins. 
 2. Search for the .vst3 or .dll file of the plugin and copy the path into the config and give it a key/name.
 3. Define the parameters in the config, which should be set to a value, like the dry/wet or the bypass parameter. Make sure that the name of the plugin is the same as above. The key is the id of the parameter. To find the id of the effect you have to load the plugin once with DawDreamer and get the parameter description. The script randomizes random selected parameters, to ensure that some parameters are not changed, intialize them here. 
