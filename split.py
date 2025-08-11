@@ -62,7 +62,7 @@ for split_name, split in splits.items():
         if os.path.exists(src_path):
             shutil.copy(src_path, dst_path)
         else:
-            print(f"Datei nicht gefunden: {src_path}")
+            print(f"File not found: {src_path}")
     
 for name, subset in splits.items():
     mean_rt60 = subset["rt60"].mean()
